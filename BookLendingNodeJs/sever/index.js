@@ -2,6 +2,8 @@ const express = require("express");
 // const mysql = require("mysql2");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
 
 const app = express();
 app.use(express.json());
@@ -168,6 +170,15 @@ app.delete('/delete_book/:id', async (req, res) => {
 //   }
 // });
   
+
+// API for uploading images
+app.post("/upload_image", upload.single("image"), (req, res) => {
+  try {
+    res.json({ message: "✅ อัปโหลดรูปภาพสำเร็จ!", filePath: req.file.path });
+  } catch (err) {
+    res.status(500).json({ message: "❌ อัปโหลดรูปภาพล้มเหลว", error: err.message });
+  }
+});
 
 // เปิดเซิร์ฟเวอร์ที่พอร์ต 3000
 app.listen(3000, () => {
