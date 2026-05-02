@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import requests
 
 API_URL = "http://localhost:3000"
@@ -107,6 +107,21 @@ def open_admin(root):
             messagebox.showerror("เกิดข้อผิดพลาด", str(e))
 
 
+    def upload_image():
+        file_path = filedialog.askopenfilename(title="เลือกไฟล์รูปภาพ", filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.gif")])
+        if not file_path:
+            return
+        try:
+            with open(file_path, "rb") as image_file:
+                files = {"image": image_file}
+                response = requests.post(f"{API_URL}/upload_image", files=files)
+                if response.status_code == 200:
+                    messagebox.showinfo("สำเร็จ", "อัปโหลดรูปภาพเรียบร้อยแล้ว")
+                else:
+                    messagebox.showerror("Error", f"อัปโหลดรูปภาพล้มเหลว: {response.text}")
+        except Exception as e:
+            messagebox.showerror("Error", f"เกิดข้อผิดพลาด: {e}")
+
 
     # UI
 
@@ -124,6 +139,7 @@ def open_admin(root):
     tk.Button(btn_frame, text="แก้ไข", font=("TH Sarabun New", 14), command=update_book, width=10).grid(row=0, column=1, padx=5)
     tk.Button(btn_frame, text="ลบ", font=("TH Sarabun New", 14), command=delete_book, width=10).grid(row=0, column=2, padx=5)
     tk.Button(btn_frame, text="แสดงข้อมูลการยืม-คืน", font=("TH Sarabun New", 14), command=show_borrow_records, width=15).grid(row=0, column=3, padx=5)
+    tk.Button(btn_frame, text="อัปโหลดรูปภาพ", font=("TH Sarabun New", 14), command=upload_image, width=15).grid(row=0, column=4, padx=5)
 
     #ตารางแสดงข้อมูลหนังสือ
     global tree
