@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk  
 import requests
 from admin_panel import open_admin
+from PIL import Image, ImageTk
+from io import BytesIO
 
 API_URL = "http://localhost:3000"
 
@@ -110,6 +112,34 @@ def return_book():
     response = requests.post(f"{API_URL}/return", json={"book_id": book_id})
     lbl_status.config(text=response.json()["message"])
 
+#โชว์รูปภาพหนังสือเมื่อดับเบิ้ลคลิกที่รายการในตาราง
+def show_book_image(event):
+    selected_item = tree.focus()
+    if not selected_item:
+        return
+
+    book_id = tree.item(selected_item)['values'][0]
+    try:
+        response = requests.get(f"{API_URL}/book_image/{book_id}")
+        if response.status_code == 200:
+            image_data = response.content
+
+            # Create a new window to display the image
+            image_window = tk.Toplevel(root)
+            image_window.title("Book Image")
+
+            # Convert image data to a format tkinter can use
+            image = Image.open(BytesIO(image_data))
+            photo = ImageTk.PhotoImage(image)
+
+            label = tk.Label(image_window, image=photo)
+            label.image = photo  
+            label.pack()
+        else:
+            tk.messagebox.showerror("Error", "ไม่สามารถโหลดรูปภาพได้")
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"เกิดข้อผิดพลาด: {e}")
+
 
 root = tk.Tk()
 root.title("ระบบยืม-คืนหนังสือ")
@@ -165,6 +195,9 @@ tree.heading("สถานะ", text="สถานะ")
 #กำหนดสีพื้นหลังของแต่ละแท็ก
 tree.tag_configure("available", background="#b1f5b7")   #สีเขียวอ่อน = พร้อมให้ยืม
 tree.tag_configure("borrowed", background="#F5B7B1")    #สีชมพูอ่อน = ถูกยืม
+
+#ดูรูปภาพหนังสือเมื่อดับเบิ้ลคลิกที่รายการในตาราง
+tree.bind("<Double-1>", show_book_image)  
 
 tree.grid(row=6, column=0, columnspan=2, padx=20, pady=20, sticky="nsew")
 

@@ -111,12 +111,19 @@ def open_admin(root):
         file_path = filedialog.askopenfilename(title="เลือกไฟล์รูปภาพ", filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.gif")])
         if not file_path:
             return
+
+        book_title = entry_title.get()
+        if not book_title:
+            messagebox.showwarning("แจ้งเตือน", "กรุณากรอกชื่อหนังสือก่อนอัปโหลดรูปภาพ")
+            return
+
         try:
             with open(file_path, "rb") as image_file:
                 files = {"image": image_file}
-                response = requests.post(f"{API_URL}/upload_image", files=files)
+                data = {"title": book_title}
+                response = requests.post(f"{API_URL}/upload_image", files=files, data=data)
                 if response.status_code == 200:
-                    messagebox.showinfo("สำเร็จ", "อัปโหลดรูปภาพเรียบร้อยแล้ว")
+                    messagebox.showinfo("สำเร็จ", "อัปโหลดรูปภาพพร้อมชื่อหนังสือเรียบร้อยแล้ว")
                 else:
                     messagebox.showerror("Error", f"อัปโหลดรูปภาพล้มเหลว: {response.text}")
         except Exception as e:

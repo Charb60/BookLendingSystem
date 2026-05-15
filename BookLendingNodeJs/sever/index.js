@@ -8,6 +8,7 @@ const path = require("path");
 const app = express();
 app.use(express.json());
 app.use(cors());
+const upload = multer({ dest: 'uploads/' });
 //mysql2
 // const db = mysql.createConnection({
 //     host: "localhost",
@@ -62,7 +63,7 @@ app.post("/borrow", async (req, res) => {
 
         res.json({ message: "✅ ยืมหนังสือสำเร็จ!" });
     } catch (err) {
-        res.status(500).json({ message: "❌ Error borrowing book", error: err.message });
+        res.status(500).json({ message: "❌ ข้อมูลไม่ครบ: กรุณาระบุรหัสหนังสือและชื่อผู้ใช้", error: err.message });
     }
 });
 
@@ -172,11 +173,41 @@ app.delete('/delete_book/:id', async (req, res) => {
   
 
 // API for uploading images
-app.post("/upload_image", upload.single("image"), (req, res) => {
+// POST upload_image — บันทึก path เข้า DB
+
+//Post upload_image — รับไฟล์รูปภาพและชื่อหนังสือจาก client แล้วบันทึก path ลง DB
+app.post("/upload_image", upload.single("image"), async (req, res) => {
   try {
-    res.json({ message: "✅ อัปโหลดรูปภาพสำเร็จ!", filePath: req.file.path });
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    
+    const { title } = req.body;
+    // บันทึก path ลง DB ตามชื่อหนังสือ
+    await db.execute(
+      "UPDATE books SET image_path = ? WHERE title = ?",
+      [req.file.path, title]
+    );
+    res.json({ message: "✅ อัปโหลดรูปภาพสำเร็จ!" });
   } catch (err) {
-    res.status(500).json({ message: "❌ อัปโหลดรูปภาพล้มเหลว", error: err.message });
+    res.status(500).json({ message: "❌ ล้มเหลว", error: err.message });
+  }
+});
+
+// GET book_image — ดึง path จาก DB แล้วส่งไฟล์
+app.get("/book_image/:book_id", async (req, res) => {
+  const { book_id } = req.params;
+  try {
+    const [rows] = await db.execute(
+      "SELECT image_path FROM books WHERE id = ?", [book_id]
+    );
+    if (rows.length === 0 || !rows[0].image_path) {
+      return res.status(404).json({ message: "ไม่พบรูปภาพ" });
+    }
+    const filePath = path.join(__dirname, rows[0].image_path);
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).json({ message: "ไม่พบไฟล์" });
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -184,3 +215,4 @@ app.post("/upload_image", upload.single("image"), (req, res) => {
 app.listen(3000, () => {
     console.log("🚀 Server is running on http://localhost:3000");
 });
+
